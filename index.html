@@ -1,0 +1,613 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A Very Important Quiz 💕</title>
+
+    <!-- Twemoji library for consistent emoji rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous">
+    </script>
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fdf6f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 1rem;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 28px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 8px 48px rgba(180, 80, 100, 0.10);
+            position: relative;
+            min-height: 420px;
+            overflow: visible;
+            transition: box-shadow 0.3s;
+        }
+
+        .progress {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f0d5db;
+            transition: background 0.4s, transform 0.3s;
+        }
+        .dot.active {
+            background: #d4537e;
+            transform: scale(1.2);
+        }
+        .dot.done {
+            background: #d4537e;
+            opacity: 0.30;
+        }
+
+        .q-emoji {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        /* Twemoji images inside .q-emoji will be sized automatically */
+        .q-emoji img {
+            width: 3rem;
+            height: 3rem;
+            vertical-align: middle;
+        }
+
+        .q-text {
+            font-size: 21px;
+            font-weight: 700;
+            color: #1a1a1a;
+            text-align: center;
+            line-height: 1.4;
+            margin-bottom: 0.2rem;
+        }
+
+        .q-sub {
+            font-size: 13px;
+            color: #999;
+            text-align: center;
+            margin-bottom: 1.75rem;
+            font-style: italic;
+            letter-spacing: 0.01em;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+        }
+
+        .opt-btn {
+            padding: 0.85rem 1.2rem;
+            border-radius: 14px;
+            border: 1.5px solid #f0d5db;
+            background: #fff8fa;
+            font-size: 15px;
+            color: #333;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+            line-height: 1.4;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.2s,
+                border-color 0.2s,
+                box-shadow 0.2s;
+            will-change: transform;
+            position: relative;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .opt-btn img {
+            vertical-align: middle;
+            width: 1.2rem;
+            height: 1.2rem;
+            margin-right: 0.2rem;
+        }
+
+        .opt-btn:hover:not(.correct):not(.disabled) {
+            background: #fdeef3;
+            border-color: #e8a0b8;
+        }
+
+        .opt-btn.correct {
+            background: #eaf6ee;
+            border-color: #5cb87a;
+            color: #1e6b35;
+            font-weight: 600;
+            cursor: default;
+        }
+
+        .opt-btn.wrong-flash {
+            border-color: #e06060;
+            background: #fde8e8;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.15s,
+                border-color 0.15s;
+        }
+
+        .opt-btn.disabled {
+            cursor: default;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .final {
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        .big-emoji {
+            font-size: 4.5rem;
+            margin-bottom: 1rem;
+        }
+        .big-emoji img {
+            width: 4.5rem;
+            height: 4.5rem;
+            vertical-align: middle;
+        }
+
+        .final-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #c2365d;
+            margin-bottom: 0.5rem;
+        }
+
+        .final-sub {
+            font-size: 15px;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .replay-btn {
+            margin-top: 1.75rem;
+            padding: 0.6rem 1.6rem;
+            border-radius: 24px;
+            border: 1.5px solid #f0d5db;
+            background: transparent;
+            cursor: pointer;
+            font-size: 13px;
+            color: #999;
+            font-family: inherit;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .replay-btn:hover {
+            background: #fff0f4;
+            border-color: #d4537e;
+            color: #d4537e;
+        }
+
+        .hearts-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .heart-particle {
+            position: absolute;
+            font-size: 1.2rem;
+            animation: floatUp 3.5s ease-in forwards;
+            opacity: 0;
+        }
+        .heart-particle img {
+            width: 1.2rem;
+            height: 1.2rem;
+            vertical-align: middle;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.04);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .bounce-in {
+            animation: bounceIn 0.45s ease forwards;
+        }
+
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            20% {
+                transform: translateX(-8px);
+            }
+            40% {
+                transform: translateX(8px);
+            }
+            60% {
+                transform: translateX(-4px);
+            }
+            80% {
+                transform: translateX(4px);
+            }
+        }
+        .shake {
+            animation: shake 0.35s ease forwards;
+        }
+
+        @media (max-width: 420px) {
+            .card {
+                padding: 1.8rem 1.2rem;
+                min-height: 360px;
+            }
+            .q-text {
+                font-size: 18px;
+            }
+            .opt-btn {
+                font-size: 14px;
+                padding: 0.7rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hearts-bg" id="hearts"></div>
+
+    <div id="app">
+        <div class="card" id="quiz-card"></div>
+    </div>
+
+    <script>
+        // ─── QUESTIONS ───────────────────────────────────────────────
+        const questions = [{
+            emoji: "🤔",
+            q: "Who is the most amazing person in your life?",
+            sub: "Think carefully… there's only one right answer here.",
+            options: [
+                { text: "Myself 🐶", correct: false },
+                { text: "You, obviously, baby 😍", correct: true },
+                { text: "My bed 😂", correct: false },
+                { text: "Some celebrity ✨", correct: false }
+            ]
+        }, {
+            emoji: "🍕",
+            q: "Do you like me?",
+            sub: "This is a very important life question.",
+            options: [
+                { text: "I hate you 😤", correct: false },
+                { text: "Yes, I always liked you", correct: true },
+                { text: "Nope", correct: false },
+                { text: "Yes, sometimes", correct: false }
+            ]
+        }, {
+            emoji: "💭",
+            q: "Do you love me?",
+            sub: "Be honest… or try to click the wrong answer.",
+            options: [
+                { text: "Never 😅", correct: false },
+                { text: "Ofc I love u so much 💓", correct: true },
+                { text: "Idk 😶", correct: false },
+                { text: "Not really 😏", correct: false }
+            ]
+        }, {
+            emoji: "🗓️",
+            q: "Will you go on a date with me this weekend?",
+            sub: "Only one option actually makes sense here.",
+            options: [
+                { text: "No 😏", correct: false },
+                { text: "Maybe… ☹️", correct: false },
+                { text: "Let me check my schedule — YES! ❤️", correct: true },
+                { text: "I'm busy… (I'm not) 😐", correct: false }
+            ]
+        }];
+
+        // ─── STATE ──────────────────────────────────────────────────
+        let current = 0;
+        let isTransitioning = false;
+
+        // ─── HELPERS ────────────────────────────────────────────────
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        // ─── TWEMOJI PARSING ───────────────────────────────────────
+        function parseEmojis(element) {
+            if (typeof twemoji !== 'undefined' && twemoji.parse) {
+                twemoji.parse(element);
+            }
+        }
+
+        // ─── HEART PARTICLES ──────────────────────────────────────
+        function spawnHeart(count = 1) {
+            const container = document.getElementById('hearts');
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.className = 'heart-particle';
+                el.textContent = ['💕', '💖', '💗', '💓', '✨'][Math.floor(Math.random() * 5)];
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.top = '100vh';
+                el.style.animationDuration = (2.5 + Math.random() * 2) + 's';
+                container.appendChild(el);
+                // Parse emoji inside this element
+                parseEmojis(el);
+                setTimeout(() => el.remove(), 4500);
+            }
+        }
+
+        // ─── ESCAPE MECHANISM (smooth, returns) ────────────────────
+        function attachEscape(btn) {
+            let timeoutId = null;
+            let isMoving = false;
+
+            const moveAway = (e) => {
+                if (isTransitioning) return;
+                if (btn.classList.contains('correct')) return;
+                if (btn.classList.contains('disabled')) return;
+
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                if (isMoving) return;
+                isMoving = true;
+
+                const angle = Math.random() * 2 * Math.PI;
+                const dist = 55 + Math.random() * 45;
+                const dx = Math.cos(angle) * dist;
+                const dy = Math.sin(angle) * dist;
+
+                btn.style.transition = 'transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                btn.style.transform = `translate(${dx}px, ${dy}px)`;
+
+                timeoutId = setTimeout(() => {
+                    btn.style.transition = 'transform 0.40s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    btn.style.transform = 'translate(0, 0)';
+                    timeoutId = null;
+                    isMoving = false;
+                }, 520);
+            };
+
+            const handler = (e) => {
+                if (e.type === 'touchstart') {
+                    e.preventDefault();
+                }
+                moveAway(e);
+            };
+
+            btn.addEventListener('mouseenter', handler);
+            btn.addEventListener('touchstart', handler, { passive: false });
+
+            btn._escapeHandler = handler;
+            btn._escapeTimeout = () => {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                btn.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                btn.style.transform = 'translate(0, 0)';
+                isMoving = false;
+            };
+        }
+
+        function detachEscape(btn) {
+            if (btn._escapeHandler) {
+                btn.removeEventListener('mouseenter', btn._escapeHandler);
+                btn.removeEventListener('touchstart', btn._escapeHandler);
+                btn._escapeHandler = null;
+            }
+            if (btn._escapeTimeout) {
+                btn._escapeTimeout();
+                btn._escapeTimeout = null;
+            }
+            btn.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            btn.style.transform = 'translate(0, 0)';
+        }
+
+        // ─── RENDER ──────────────────────────────────────────────────
+        function render() {
+            const card = document.getElementById('quiz-card');
+            card.className = 'card bounce-in';
+            isTransitioning = false;
+
+            // ── Final screen ──
+            if (current >= questions.length) {
+                card.innerHTML = `
+                    <div class="final">
+                        <div class="big-emoji">🥳</div>
+                        <div class="final-title">You passed with flying colors!</div>
+                        <div class="final-sub">
+                            You clearly have excellent taste, baby.<br><br>
+                            See you this weekend, my love? 💕<br>
+                            <em style="font-size:13px;color:#bbb;">Can't wait 🌟</em>
+                        </div>
+                        <button class="replay-btn" onclick="restart()">Take the quiz again (not that you need to)</button>
+                    </div>
+                `;
+                // Parse emojis in the final screen
+                parseEmojis(card);
+
+                // Spawn hearts
+                let count = 0;
+                const iv = setInterval(() => {
+                    spawnHeart(2);
+                    if (++count > 18) clearInterval(iv);
+                }, 120);
+                return;
+            }
+
+            const q = questions[current];
+            const shuffled = shuffle(q.options);
+
+            // Progress dots
+            const dots = questions.map((_, i) => {
+                let cls = 'dot';
+                if (i < current) cls += ' done';
+                else if (i === current) cls += ' active';
+                return `<div class="${cls}"></div>`;
+            }).join('');
+
+            card.innerHTML = `
+                <div class="progress">${dots}</div>
+                <div class="q-emoji">${q.emoji}</div>
+                <div class="q-text">${q.q}</div>
+                <div class="q-sub">${q.sub}</div>
+                <div class="options" id="opts">
+                    ${shuffled.map((opt, i) => `
+                        <button class="opt-btn" id="opt-${i}" data-correct="${opt.correct}">
+                            ${opt.text}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+
+            // Parse all emojis inside the card
+            parseEmojis(card);
+
+            // ── Attach events ──
+            const buttons = card.querySelectorAll('.opt-btn');
+            buttons.forEach((btn, i) => {
+                const opt = shuffled[i];
+                if (!opt.correct) {
+                    attachEscape(btn);
+                }
+
+                btn.addEventListener('click', (e) => {
+                    if (isTransitioning) return;
+                    if (btn.classList.contains('correct')) return;
+                    if (btn.classList.contains('disabled')) return;
+                    handleChoice(btn, opt);
+                });
+            });
+        }
+
+        // ─── HANDLE CHOICE ──────────────────────────────────────────
+        function handleChoice(el, opt) {
+            if (isTransitioning) return;
+            const card = document.getElementById('quiz-card');
+            const allBtns = card.querySelectorAll('.opt-btn');
+
+            allBtns.forEach(b => {
+                b.classList.add('disabled');
+                detachEscape(b);
+            });
+
+            if (opt.correct) {
+                isTransitioning = true;
+                el.classList.add('correct');
+                const rawText = el.textContent;
+                el.textContent = '✓ ' + rawText;
+                // Re-parse emojis inside this button (the checkmark may be plain)
+                parseEmojis(el);
+
+                spawnHeart(4);
+                setTimeout(() => spawnHeart(3), 200);
+                setTimeout(() => spawnHeart(2), 400);
+
+                setTimeout(() => {
+                    current++;
+                    render();
+                }, 950);
+
+            } else {
+                // Wrong
+                el.classList.add('wrong-flash');
+
+                const angle = Math.random() * 2 * Math.PI;
+                const dist = 70 + Math.random() * 50;
+                const dx = Math.cos(angle) * dist;
+                const dy = Math.sin(angle) * dist;
+
+                el.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                el.style.transform = `translate(${dx}px, ${dy}px)`;
+                el.classList.add('shake');
+
+                setTimeout(() => {
+                    el.style.transition = 'transform 0.40s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    el.style.transform = 'translate(0, 0)';
+                    el.classList.remove('wrong-flash', 'shake');
+
+                    const allBtns2 = card.querySelectorAll('.opt-btn');
+                    allBtns2.forEach(b => {
+                        if (!b.classList.contains('correct')) {
+                            b.classList.remove('disabled');
+                            const isCorrect = b.dataset.correct === 'true';
+                            if (!isCorrect && b !== el) {
+                                attachEscape(b);
+                            }
+                        }
+                    });
+                    isTransitioning = false;
+                }, 650);
+            }
+        }
+
+        // ─── RESTART ─────────────────────────────────────────────────
+        function restart() {
+            document.querySelectorAll('.opt-btn').forEach(b => detachEscape(b));
+            current = 0;
+            isTransitioning = false;
+            render();
+        }
+
+        // ─── START ──────────────────────────────────────────────────
+        render();
+
+        // Spawn a few hearts periodically for ambiance
+        setInterval(() => {
+            if (Math.random() < 0.25) spawnHeart(1);
+        }, 4000);
+    </script>
+</body>
+</html>
