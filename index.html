@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -74,7 +74,6 @@
             text-align: center;
             margin-bottom: 0.5rem;
         }
-        /* Twemoji images inside .q-emoji will be sized automatically */
         .q-emoji img {
             width: 3rem;
             height: 3rem;
@@ -164,16 +163,29 @@
         .final {
             text-align: center;
             padding: 1rem 0;
+            position: relative;
         }
 
         .big-emoji {
             font-size: 4.5rem;
             margin-bottom: 1rem;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
         }
         .big-emoji img {
             width: 4.5rem;
             height: 4.5rem;
             vertical-align: middle;
+        }
+
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0) rotate(-3deg);
+            }
+            50% {
+                transform: translateY(-12px) rotate(3deg);
+            }
         }
 
         .final-title {
@@ -207,7 +219,8 @@
             color: #d4537e;
         }
 
-        .hearts-bg {
+        /* ─── Floating particles (hearts + flowers) ─── */
+        .particles-bg {
             position: fixed;
             top: 0;
             left: 0;
@@ -218,13 +231,13 @@
             overflow: hidden;
         }
 
-        .heart-particle {
+        .particle {
             position: absolute;
             font-size: 1.2rem;
             animation: floatUp 3.5s ease-in forwards;
             opacity: 0;
         }
-        .heart-particle img {
+        .particle img {
             width: 1.2rem;
             height: 1.2rem;
             vertical-align: middle;
@@ -232,11 +245,11 @@
 
         @keyframes floatUp {
             0% {
-                transform: translateY(0) scale(0.5);
-                opacity: 0.8;
+                transform: translateY(0) scale(0.5) rotate(0deg);
+                opacity: 0.9;
             }
             100% {
-                transform: translateY(-100vh) scale(1.2);
+                transform: translateY(-100vh) scale(1.3) rotate(720deg);
                 opacity: 0;
             }
         }
@@ -281,6 +294,77 @@
             animation: shake 0.35s ease forwards;
         }
 
+        /* ─── Flower bouquet animation on final ─── */
+        .bouquet-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 0.8rem;
+            animation: sparkle 1.2s ease-out forwards;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .sparkle img {
+            width: 0.8rem;
+            height: 0.8rem;
+            vertical-align: middle;
+        }
+
+        @keyframes sparkle {
+            0% {
+                transform: translate(0, 0) scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Petal rain on final */
+        .petal-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .petal {
+            position: absolute;
+            font-size: 1.8rem;
+            animation: petalFall linear forwards;
+            opacity: 0.9;
+        }
+        .petal img {
+            width: 1.8rem;
+            height: 1.8rem;
+            vertical-align: middle;
+        }
+
+        @keyframes petalFall {
+            0% {
+                transform: translateY(-10vh) rotate(0deg) scale(0.6);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(110vh) rotate(720deg) scale(1);
+                opacity: 0;
+            }
+        }
+
         @media (max-width: 420px) {
             .card {
                 padding: 1.8rem 1.2rem;
@@ -293,12 +377,19 @@
                 font-size: 14px;
                 padding: 0.7rem 1rem;
             }
+            .petal {
+                font-size: 1.2rem;
+            }
+            .petal img {
+                width: 1.2rem;
+                height: 1.2rem;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="hearts-bg" id="hearts"></div>
+    <div class="particles-bg" id="particles"></div>
 
     <div id="app">
         <div class="card" id="quiz-card"></div>
@@ -351,6 +442,7 @@
         // ─── STATE ──────────────────────────────────────────────────
         let current = 0;
         let isTransitioning = false;
+        let petalRainInterval = null;
 
         // ─── HELPERS ────────────────────────────────────────────────
         function shuffle(arr) {
@@ -369,24 +461,72 @@
             }
         }
 
-        // ─── HEART PARTICLES ──────────────────────────────────────
-        function spawnHeart(count = 1) {
-            const container = document.getElementById('hearts');
+        // ─── PARTICLES (hearts + flowers) ─────────────────────────
+        const particleEmojis = ['💕', '💖', '💗', '💓', '🌸', '🌺', '🌹', '🌷', '✨'];
+
+        function spawnParticle(count = 1, onlyFlowers = false) {
+            const container = document.getElementById('particles');
+            const pool = onlyFlowers ? ['🌸', '🌺', '🌹', '🌷'] : particleEmojis;
+
             for (let i = 0; i < count; i++) {
                 const el = document.createElement('div');
-                el.className = 'heart-particle';
-                el.textContent = ['💕', '💖', '💗', '💓', '✨'][Math.floor(Math.random() * 5)];
+                el.className = 'particle';
+                el.textContent = pool[Math.floor(Math.random() * pool.length)];
                 el.style.left = Math.random() * 100 + 'vw';
                 el.style.top = '100vh';
-                el.style.animationDuration = (2.5 + Math.random() * 2) + 's';
+                el.style.animationDuration = (2.8 + Math.random() * 2.2) + 's';
+                el.style.fontSize = (1 + Math.random() * 0.8) + 'rem';
                 container.appendChild(el);
-                // Parse emoji inside this element
                 parseEmojis(el);
-                setTimeout(() => el.remove(), 4500);
+                setTimeout(() => el.remove(), 5000);
             }
         }
 
-        // ─── ESCAPE MECHANISM (smooth, returns) ────────────────────
+        // ─── PETAL RAIN (for final screen) ────────────────────────
+        const flowerEmojis = ['🌸', '🌺', '🌹', '🌷', '🌻', '🌼'];
+
+        function startPetalRain() {
+            if (petalRainInterval) return;
+            const container = document.createElement('div');
+            container.className = 'petal-rain';
+            container.id = 'petal-rain';
+            document.body.appendChild(container);
+
+            let count = 0;
+            petalRainInterval = setInterval(() => {
+                const el = document.createElement('div');
+                el.className = 'petal';
+                el.textContent = flowerEmojis[Math.floor(Math.random() * flowerEmojis.length)];
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.animationDuration = (4 + Math.random() * 3) + 's';
+                el.style.fontSize = (1.2 + Math.random() * 1.2) + 'rem';
+                const delay = Math.random() * 1.5;
+                el.style.animationDelay = delay + 's';
+                container.appendChild(el);
+                parseEmojis(el);
+                setTimeout(() => el.remove(), 7000 + delay * 1000);
+                count++;
+                if (count > 80) {
+                    clearInterval(petalRainInterval);
+                    petalRainInterval = null;
+                    // after 6 more seconds, remove the container
+                    setTimeout(() => {
+                        if (container.parentNode) container.remove();
+                    }, 8000);
+                }
+            }, 180);
+        }
+
+        function stopPetalRain() {
+            if (petalRainInterval) {
+                clearInterval(petalRainInterval);
+                petalRainInterval = null;
+            }
+            const container = document.getElementById('petal-rain');
+            if (container) container.remove();
+        }
+
+        // ─── ESCAPE MECHANISM ──────────────────────────────────────
         function attachEscape(btn) {
             let timeoutId = null;
             let isMoving = false;
@@ -463,34 +603,62 @@
 
             // ── Final screen ──
             if (current >= questions.length) {
+                stopPetalRain();
+
                 card.innerHTML = `
                     <div class="final">
-                        <div class="big-emoji">🥳</div>
-                        <div class="final-title">You passed with flying colors!</div>
+                        <div class="bouquet-wrapper">
+                            <div class="big-emoji" id="bouquet-emoji">💐</div>
+                        </div>
+                        <div class="final-title">You passed with flying colors! 🌸</div>
                         <div class="final-sub">
                             You clearly have excellent taste, baby.<br><br>
+                            These flowers are for you — just the beginning of what I'd give you 💐<br><br>
                             See you this weekend, my love? 💕<br>
                             <em style="font-size:13px;color:#bbb;">Can't wait 🌟</em>
                         </div>
                         <button class="replay-btn" onclick="restart()">Take the quiz again (not that you need to)</button>
                     </div>
                 `;
-                // Parse emojis in the final screen
+
                 parseEmojis(card);
 
-                // Spawn hearts
-                let count = 0;
-                const iv = setInterval(() => {
-                    spawnHeart(2);
-                    if (++count > 18) clearInterval(iv);
-                }, 120);
+                // Spawn bouquet sparkles
+                const bouquet = document.getElementById('bouquet-emoji');
+                if (bouquet) {
+                    for (let i = 0; i < 16; i++) {
+                        const spark = document.createElement('span');
+                        spark.className = 'sparkle';
+                        spark.textContent = ['✨', '🌟', '💫', '🌸', '🌺', '🌹', '💐'][Math.floor(Math.random() * 7)];
+                        const angle = Math.random() * 2 * Math.PI;
+                        const dist = 50 + Math.random() * 80;
+                        spark.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                        spark.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+                        spark.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+                        spark.style.animationDelay = (Math.random() * 0.3) + 's';
+                        bouquet.parentElement.appendChild(spark);
+                        parseEmojis(spark);
+                        setTimeout(() => spark.remove(), 2000);
+                    }
+                }
+
+                // Start petal rain
+                setTimeout(() => startPetalRain(), 300);
+
+                // Spawn flowers and hearts
+                for (let i = 0; i < 6; i++) {
+                    setTimeout(() => {
+                        spawnParticle(3, true);
+                        spawnParticle(2, false);
+                    }, i * 300);
+                }
+
                 return;
             }
 
             const q = questions[current];
             const shuffled = shuffle(q.options);
 
-            // Progress dots
             const dots = questions.map((_, i) => {
                 let cls = 'dot';
                 if (i < current) cls += ' done';
@@ -512,10 +680,8 @@
                 </div>
             `;
 
-            // Parse all emojis inside the card
             parseEmojis(card);
 
-            // ── Attach events ──
             const buttons = card.querySelectorAll('.opt-btn');
             buttons.forEach((btn, i) => {
                 const opt = shuffled[i];
@@ -548,12 +714,13 @@
                 el.classList.add('correct');
                 const rawText = el.textContent;
                 el.textContent = '✓ ' + rawText;
-                // Re-parse emojis inside this button (the checkmark may be plain)
                 parseEmojis(el);
 
-                spawnHeart(4);
-                setTimeout(() => spawnHeart(3), 200);
-                setTimeout(() => spawnHeart(2), 400);
+                // Spawn flowers + hearts
+                spawnParticle(4, true);
+                spawnParticle(3, false);
+                setTimeout(() => spawnParticle(3, true), 200);
+                setTimeout(() => spawnParticle(2, false), 400);
 
                 setTimeout(() => {
                     current++;
@@ -595,6 +762,7 @@
 
         // ─── RESTART ─────────────────────────────────────────────────
         function restart() {
+            stopPetalRain();
             document.querySelectorAll('.opt-btn').forEach(b => detachEscape(b));
             current = 0;
             isTransitioning = false;
@@ -604,10 +772,16 @@
         // ─── START ──────────────────────────────────────────────────
         render();
 
-        // Spawn a few hearts periodically for ambiance
+        // Ambient particles
         setInterval(() => {
-            if (Math.random() < 0.25) spawnHeart(1);
-        }, 4000);
+            if (Math.random() < 0.3) {
+                spawnParticle(1, Math.random() < 0.5);
+            }
+        }, 2500);
+
+        // ─── Extra: send flowers on correct answers ────────────────
+        // (Already handled in handleChoice)
+        console.log('🌸 Quiz ready — flowers included! 💐');
     </script>
 </body>
 </html>
